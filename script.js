@@ -124,6 +124,14 @@ let totalcount = getEl("totalcount");
 let totop = getEl("totop");
 let treebar = getEl("treebar");
 let treebtn = getEl("treebtn");
+let bgColor = getEl("bgColor");
+let bgImageBtn = getEl("bgImageBtn");
+let bgImageInput = getEl("bgImageInput");
+let clearBg = getEl("clearBg");
+let autoscroll = getEl("autoscroll");
+let scrollspeed = getEl("scrollspeed");
+let speedvalue = getEl("speedvalue");
+let scrollMode = getEl("scrollMode");
 // #endregion
 let zoom;
 let flextype;
@@ -131,6 +139,7 @@ let currdir;
 let minCol;
 let minR, maxR;
 let held = false;
+let scrollAnimation = null;
 totalcount.value = 0;
 loadedcount.value = 0;
 showcount.value = 0;
@@ -158,6 +167,8 @@ let enums = {
   name: "name",
   date: "date",
   size: "size",
+  random: "random",
+  folderRandom: "folderRandom",
   asc: "asc",
   desc: "desc",
 };
@@ -234,6 +245,55 @@ function initConfig(id) {
   input.onchange({ target: input });
   input.oninput({ target: input });
 }
+function initBackground() {
+  let storedBgColor = localStorage.getItem("bgColor");
+  // let storedBgImage = localStorage.getItem("bgImage");
+  
+  if (storedBgColor) {
+    bgColor.value = storedBgColor;
+    docEl.style.setProperty("--bg-color", storedBgColor);
+  }
+  
+  // if (storedBgImage) {
+  //   docEl.style.setProperty("--bg-image", `url(${storedBgImage})`);
+  // }
+  
+  bgColor.addEventListener("input", (e) => {
+    let color = e.target.value;
+    docEl.style.setProperty("--bg-color", color);
+    localStorage.setItem("bgColor", color);
+  });
+  
+  // bgImageBtn.addEventListener("click", () => {
+  //   bgImageInput.click();
+  // });
+  
+  // bgImageInput.addEventListener("change", async (e) => {
+  //   let file = e.target.files[0];
+  //   if (!file) return;
+    
+  //   if (!file.type.startsWith("image/")) {
+  //     alert("请选择图片文件");
+  //     return;
+  //   }
+    
+  //   let reader = new FileReader();
+  //   reader.onload = (e) => {
+  //     let imageUrl = e.target.result;
+  //     docEl.style.setProperty("--bg-image", `url(${imageUrl})`);
+  //     localStorage.setItem("bgImage", imageUrl);
+  //   };
+  //   reader.readAsDataURL(file);
+  // });
+  
+  clearBg.addEventListener("click", () => {
+    docEl.style.setProperty("--bg-color", "#000000");
+    docEl.style.setProperty("--bg-image", "none");
+    bgColor.value = "#000000";
+    localStorage.removeItem("bgImage");
+    localStorage.setItem("bgColor", "#000000");
+  });
+}
 document.ondrop = async (e) => {
   if (e.dataTransfer.types[0] !== "Files") return;
   e.preventDefault();
@@ -306,6 +366,56 @@ async function handle(items, dir = "", folderUl = dirtree.children[0]) {
   }
 }
 function reflow(index = 0) {
+  if (filting) return;
+  filting = 1;
+  let type = sortby.value;
+  let ord = order.value;
+  let imgs = [...imgbox.children];
+  if (type !== enums.default) {
+    if (type === enums.folderRandom) {
+      // 按文件夹分组
+      let folderGroups = new Map();
+      toLoad.items.forEach(path => {
+        let data = allData.get(path);
+        if (typeof data === "object") {
+          let dir = data.file.dir;
+          if (!folderGroups.has(dir)) {
+            folderGroups.set(dir, []);
+          }
+          folderGroups.get(dir).push(path);
+        }
+      });
+      
+      // 随机打乱每个文件夹内的文件
+      for (let files of folderGroups.values()) {
+        for (let i = files.length - 1; i > 0; i--) {
+          let j = Math.floor(Math.random() * (i + 1));
+          [files[i], files[j]] = [files[j], files[i]];
+        }
+      }
+      
+      // 将所有文件夹的文件交错组合
+      let maxLength = Math.max(...folderGroups.values().map(arr => arr.length));
+      let newItems = [];
+      for (let i = 0; i < maxLength; i++) {
+        for (let files of folderGroups.values()) {
+          if (i < files.length) {
+            newItems.push(files[i]);
+          }
+        }
+      }
+      toLoad.items = newItems;
+    } else {
+      imgs.sort((a, b) => {
+        if (type === enums.random) {
+          return Math.random() - 0.5;
+        }
+        let va = a.dataset[type];
+        let vb = b.dataset[type];
+        return ord === enums.asc ? va - vb : vb - va;
+      });
+    }
+  }
   if (!filtmono.active && !filtborder.active && revert.active) return;
   imgbox.querySelectorAll(".mark").forEach((el) => {
     el.remove();
@@ -330,13 +440,13 @@ function reflow(index = 0) {
     showcount.value = 0;
   }
   if (index > 0) toLoad.items = toLoad.items.slice(index);
-  let key = sortby.value;
-  if (key !== enums.default)
+  if (type !== enums.default && type !== enums.folderRandom)
     toLoad.items = toLoad.items
       .filter((p) => typeof allData.get(p) === "object")
-      .sort((a, b) => allData.get(a).file[key] - allData.get(b).file[key]);
-  if (order.value === enums.desc) toLoad.items.reverse();
+      .sort((a, b) => allData.get(a).file[type] - allData.get(b).file[type]);
+  if (ord === enums.desc) toLoad.items.reverse();
   loadNext();
+  filting = 0;
 }
 async function loadNext() {
   if (
@@ -668,6 +778,7 @@ function parseRatio() {
 initFlex();
 initSort();
 initFilt();
+initBackground();
 configs.forEach(initConfig);
 imgbox.onmouseout = addInfo;
 imgbox.onmouseenter = addInfo;
@@ -716,7 +827,8 @@ minheightinput.addEventListener("change", () => {
 dirtree.onclick = (e) => {
   let li = e.target;
   if (li.tagName !== "LI") treebar.classList.remove("show");
-  else if (sortby.value === enums.default && order.value === enums.asc)
+  else
+  // else if (sortby.value === enums.default && order.value === enums.asc)
     reflow(li.index - 1);
   e.stopPropagation();
 };
@@ -764,6 +876,7 @@ document.addEventListener("keydown", (e) => {
     if (cover.classList.contains("show")) hideCover();
     else if (treebar.classList.contains("show"))
       treebar.classList.remove("show");
+    else if (scrollAnimation) stopAutoScroll();
     else sidebar.classList.toggle("show");
   }
   if (
@@ -772,3 +885,79 @@ document.addEventListener("keydown", (e) => {
   )
     naviZoom(e);
 });
+
+function startAutoScroll() {
+  if (scrollAnimation) return;
+  
+  autoscroll.classList.add("active");
+  docEl.style.cursor = "none";
+  sidebar.classList.remove("show");
+  
+  const speed = scrollspeed.value * 0.5;
+  let direction = 1;
+  
+  function scroll() {
+    if (!scrollAnimation) return;
+    
+    const mode = scrollMode.value;
+    const isAtBottom = docEl.scrollTop + docEl.clientHeight >= docEl.scrollHeight;
+    const isAtTop = docEl.scrollTop <= 0;
+    
+    if (mode === "down") {
+      if (isAtBottom) {
+        docEl.scrollTo(0, 0);
+      } else {
+        docEl.scrollBy(0, speed);
+      }
+    } else if (mode === "updown") {
+      if (isAtBottom) {
+        direction = -1;
+      } else if (isAtTop) {
+        direction = 1;
+      }
+      docEl.scrollBy(0, speed * direction);
+    }
+    
+    scrollAnimation = requestAnimationFrame(scroll);
+  }
+  
+  scrollAnimation = requestAnimationFrame(scroll);
+}
+
+function stopAutoScroll() {
+  if (scrollAnimation) {
+    cancelAnimationFrame(scrollAnimation);
+    scrollAnimation = null;
+    autoscroll.classList.remove("active");
+    docEl.style.cursor = "";
+  }
+}
+
+autoscroll.onclick = () => {
+  if (scrollAnimation) {
+    stopAutoScroll();
+  } else {
+    startAutoScroll();
+  }
+};
+
+scrollspeed.oninput = (e) => {
+  speedvalue.innerText = e.target.value;
+  if (scrollAnimation) {
+    stopAutoScroll();
+    startAutoScroll();
+  }
+};
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && scrollAnimation) {
+    stopAutoScroll();
+  }
+});
+
+scrollMode.onchange = () => {
+  if (scrollAnimation) {
+    stopAutoScroll();
+    startAutoScroll();
+  }
+};

@@ -6,10 +6,17 @@
   --opacity: 1;
   --halfwhite: rgba(255, 255, 255, 0.5);
   --halfblack: rgba(0, 0, 0, 0.5);
+  --bg-color: #000;
+  --bg-image: none;
 }
 body {
   margin: 0;
-  background-color: black;
+  background-color: var(--bg-color, #000);
+  background-image: var(--bg-image, none);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
   color: white;
   display: flex;
   overflow-y: scroll;
@@ -208,9 +215,10 @@ img {
   left: -400px;
   display: grid;
   align-items: center;
-  grid-auto-rows: 40px;
+  grid-auto-rows: min-content;
   grid-template-columns: repeat(6, 50px);
   column-gap: 10px;
+  row-gap: 10px;
   border-radius: 20px;
   padding: 20px;
   background-color: var(--halfblack);
@@ -379,4 +387,46 @@ select:hover {
 ::selection {
   background-color: white;
   color: black;
+}
+.background-settings {
+  grid-column: span 6;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 5px 0;
+  align-items: center;
+  justify-content: start;
+}
+.background-settings input[type="color"] {
+  width: 100px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.background-settings button {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #333;
+  color: #fff;
+  cursor: pointer;
+}
+.background-settings button:hover {
+  background: #444;
+}
+.tip {
+  grid-column: span 6;
+  margin: 5px 0;
+}
+#sidebar > div:not(.background-settings):not(.tip) {
+  display: flex;
+  align-items: center;
+}
+#sidebar input,
+#sidebar button,
+#sidebar select {
+  margin: auto 0;
 }

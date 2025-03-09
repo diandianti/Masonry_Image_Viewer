@@ -109,6 +109,8 @@
         <option value="default">默认</option>
         <option value="lastModified">日期</option>
         <option value="size">大小</option>
+        <option value="random">随机</option>
+        <option value="folderRandom">多文件夹随机</option>
       </select>
       <select id="order" class="span2">
         <option value="asc">升序</option>
@@ -120,16 +122,40 @@
       <button id="filtborder" class="span2">纯色边框</button>
       <button id="revert">反转</button>
       <div class="tip">
+        背景：
+      </div>
+      <div class="background-settings">
+        <input type="color" id="bgColor" class="span2" value="#000000" />
+        <!-- <button id="bgImageBtn" class="span2">选择图片</button>
+        <input type="file" id="bgImageInput" accept="image/*" style="display: none;" /> -->
+        <button id="clearBg" class="span2">清除背景</button>
+      </div>
+      <div class="tip">
         宽高：
         <div class="tootip">
           例：<br />
-          “16:9”表示宽高比等于16：9<br />
-          “16:9-”表示宽高比大于16：9<br />
-          “-16:9”表示宽高比小于16：9<br />
-          “4:3-16:9”表示宽高比在4:3到16：9之间<br />
+          "16:9"表示宽高比等于16：9<br />
+          "16:9-"表示宽高比大于16：9<br />
+          "-16:9"表示宽高比小于16：9<br />
+          "4:3-16:9"表示宽高比在4:3到16：9之间<br />
         </div>
       </div>
       <input type="text" id="aspectratio" class="span3" />
+      <div class="tip">自动滚动：</div>
+      <button id="autoscroll" class="span2">开始</button>
+      <input
+        type="range"
+        id="scrollspeed"
+        min="1"
+        max="10"
+        value="3"
+        class="span2"
+      />
+      <div id="speedvalue">3</div>
+      <select id="scrollMode" class="span2">
+        <option value="down">向下滚动</option>
+        <option value="updown">上下往复</option>
+      </select>
     </div>
     <script src="script.js"></script>
   </body>
